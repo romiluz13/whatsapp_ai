@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "WhatsApp AI Co-Pilot",
+  "version": "0.1.0",
+  "description": "AI assistant for WhatsApp Web, built with your awesome plan!",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "alarms",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://web.whatsapp.com/*",
+    "http://localhost:3000/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* http://127.0.0.1:*;"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content.js"],
+      "css": ["panel.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "panel.html", "panel.css", "panel.js",
+        "fontawesome/css/all.min.css",
+        "fontawesome/webfonts/*"
+      ],
+      "matches": ["https://web.whatsapp.com/*"]
+    }
+  ],
+  "action": {
+    "default_title": "WhatsApp AI Co-Pilot"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+} 

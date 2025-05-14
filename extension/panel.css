@@ -1,0 +1,491 @@
+/* Tailwind-inspired Modern UI - General Panel Styling */
+:root {
+    --wa-green: #00a884;
+    --wa-green-dark: #008069;
+    --wa-light-green-bg: #e5ddd5; /* WhatsApp chat background */
+    --wa-message-user: #dcf8c6;
+    --wa-message-assistant: #ffffff;
+    --text-primary: #111b21;
+    --text-secondary: #54656f;
+    --text-light: #667781;
+    --border-color: #d1d7db;
+    --bg-panel: #f7f9fa;
+    --bg-input-area: #f0f2f5;
+    --bg-controls: #ffffff;
+    --font-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+}
+
+html[dir="rtl"] body {
+    font-family: var(--font-sans); /* Consistent font */
+}
+
+body {
+    font-family: var(--font-sans);
+    margin: 0;
+    background-color: var(--bg-input-area); /* Match WA input area for body */
+    color: var(--text-primary);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#ai-copilot-panel {
+    width: 360px; /* Default width, can be adjusted by user */
+    height: 100%;
+    background-color: var(--bg-panel);
+    border-right: 1px solid var(--border-color); /* For RTL */
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05); /* Softer shadow */
+    display: flex;
+    flex-direction: column;
+    transition: width 0.2s ease; /* Only width transition needed now */
+}
+
+#ai-copilot-panel.collapsed {
+    width: 0 !important; /* Ensure it collapses fully */
+    overflow: hidden;
+    padding: 0;
+    border-right: none;
+    box-shadow: none;
+}
+
+.panel-header {
+    background-color: var(--wa-green-dark);
+    color: white;
+    padding: 12px 16px; /* Tailwind-like spacing */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    /* box-shadow: 0 1px 2px rgba(0,0,0,0.05); */ /* Subtle shadow or none */
+}
+
+.panel-title {
+    font-size: 18px; /* Slightly smaller */
+    font-weight: 500; /* Medium weight */
+    display: flex;
+    align-items: center;
+}
+.panel-title .fab.fa-whatsapp {
+    margin-left: 8px; /* For RTL */
+    margin-right: 0;
+    font-size: 22px;
+}
+
+.fold-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px; /* Larger icon for better tap target */
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+.fold-button:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+/* Top Controls Area */
+.panel-top-controls {
+    padding: 12px 16px;
+    background-color: var(--bg-controls);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Space between control groups */
+}
+
+/* Chat Area */
+.chat-area-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 16px; /* More padding */
+    background-color: var(--wa-light-green-bg);
+    display: flex;
+    flex-direction: column-reverse; /* New messages at bottom, scroll up for history */
+}
+
+.message-list {
+    display: flex;
+    flex-direction: column; /* Messages stack normally now due to parent reverse */
+    gap: 10px;
+    width: 100%;
+}
+
+/* Chat Input Area */
+.chat-input-area {
+    display: flex;
+    align-items: flex-end; /* Align items to bottom for multi-line textarea */
+    padding: 12px 16px;
+    background-color: var(--bg-input-area);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+    gap: 8px; /* Space between textarea and button */
+}
+
+.chat-input-area textarea#ai-query-input {
+    flex-grow: 1;
+    padding: 10px 16px; /* More padding */
+    border: 1px solid #ccd0d5; /* Slightly different border */
+    border-radius: 18px; /* Consistent rounded corners */
+    font-size: 15px;
+    resize: none;
+    min-height: 24px; /* Based on line-height + padding */
+    max-height: 120px;
+    line-height: 1.5;
+    box-sizing: border-box;
+    background-color: var(--bg-controls);
+    color: var(--text-primary);
+}
+.chat-input-area textarea#ai-query-input::placeholder {
+    color: var(--text-light);
+}
+.chat-input-area textarea#ai-query-input:focus {
+    outline: none;
+    border-color: var(--wa-green);
+    box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.2);
+}
+
+
+.chat-input-area button#ask-question-button {
+    background-color: var(--wa-green);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 44px; /* Slightly larger */
+    height: 44px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0; /* Prevent button from shrinking */
+    padding: 0;
+    margin: 0;
+}
+.chat-input-area button#ask-question-button i {
+    margin: 0;
+}
+.chat-input-area button#ask-question-button:hover:not(:disabled) {
+    background-color: var(--wa-green-dark);
+}
+.chat-input-area button#ask-question-button:disabled {
+    background-color: #bcc0c4; /* Lighter disabled color */
+    cursor: not-allowed;
+}
+
+/* Status Section in Top Controls */
+.status-section {
+    padding: 0; /* No extra padding, handled by parent */
+    margin-bottom: 0; /* No margin, handled by gap */
+    background-color: transparent;
+    border-radius: 0;
+    text-align: center;
+    border: none;
+    box-shadow: none;
+}
+#whatsapp-connection-status {
+    font-weight: 500;
+    margin-bottom: 8px;
+    font-size: 0.9em; /* Smaller status text */
+    color: var(--text-secondary);
+}
+#whatsapp-qr-code-area p {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+#whatsapp-qr-code-img {
+    background-color: white;
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    border-radius: 6px;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Group Selector in Top Controls */
+.control-section label { /* For "Select Group" */
+    display: block;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+    font-size: 0.9em;
+}
+select#chat-selector {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccd0d5;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background-color: var(--bg-controls);
+    color: var(--text-primary);
+}
+select#chat-selector:focus {
+    outline: none;
+    border-color: var(--wa-green);
+    box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.2);
+}
+
+/* General Button (e.g., Summarize Group) */
+.button {
+    background-color: var(--wa-green);
+    color: white;
+    border: none;
+    padding: 8px 16px; /* Tailwind-like padding */
+    border-radius: 6px; /* Standard border radius */
+    font-size: 14px;
+    font-weight: 500; /* Medium weight */
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* box-shadow: 0 1px 2px rgba(0,0,0,0.05); */ /* Optional subtle shadow */
+}
+.button:hover:not(:disabled) {
+    background-color: var(--wa-green-dark);
+}
+.button:disabled {
+    background-color: #e0e0e0; /* Lighter disabled */
+    color: #a0a0a0;
+    cursor: not-allowed;
+}
+.button i {
+    font-size: 1.1em; /* Relative to button font size */
+}
+html[dir="rtl"] .button i {
+    margin-right: 8px;
+    margin-left: 0;
+}
+html[dir="ltr"] .button i {
+    margin-left: 8px;
+    margin-right: 0;
+}
+.button.full-width {
+    width: 100%;
+}
+
+/* Message Styling */
+.message {
+    padding: 10px 14px; /* Consistent padding */
+    border-radius: 12px; /* Softer, modern radius */
+    margin-bottom: 0; /* Gap handled by message-list */
+    max-width: 85%; /* More space for messages */
+    word-wrap: break-word;
+    font-size: 14.5px; /* Slightly larger message font */
+    line-height: 1.45;
+    box-shadow: 0 1px 1.5px rgba(0,0,0,0.07); /* Subtle shadow */
+    position: relative; /* For potential future elements like timestamps */
+}
+.message strong { /* Sender Name (You, AI Assistant) */
+    display: block;
+    font-weight: 600; /* Semibold */
+    margin-bottom: 4px;
+    font-size: 0.8em; /* Smaller, distinct sender name */
+    color: var(--text-primary); /* Darker for better contrast on bubbles */
+    opacity: 0.8;
+}
+
+.user-message {
+    background-color: var(--wa-message-user);
+    color: var(--text-primary); /* Ensure text is readable */
+    border-bottom-left-radius: 4px; /* WhatsApp style "tail" */
+}
+html[dir="rtl"] .user-message {
+    align-self: flex-end;
+    margin-left: auto;
+    margin-right: 0;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 12px;
+}
+html[dir="ltr"] .user-message {
+    align-self: flex-end;
+    margin-right: auto;
+    margin-left: 0;
+}
+
+
+.assistant-message {
+    background-color: var(--wa-message-assistant);
+    color: var(--text-primary);
+    border: 1px solid #f0f0f0; /* Softer border for assistant messages */
+    border-bottom-right-radius: 4px; /* WhatsApp style "tail" */
+}
+html[dir="rtl"] .assistant-message {
+    align-self: flex-start;
+    margin-right: auto;
+    margin-left: 0;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 12px;
+}
+html[dir="ltr"] .assistant-message {
+    align-self: flex-start;
+    margin-left: auto;
+    margin-right: 0;
+}
+
+
+.assistant-message.error-message {
+    background-color: #fff0f0;
+    border-color: #ffdddd;
+    color: #d8000c;
+}
+.assistant-message.error-message strong {
+  color: #a00000;
+}
+
+/* Styles for AI-generated HTML content within assistant messages */
+.assistant-message .message-content h2 {
+  font-size: 1.15em; /* Larger than base message text, but not huge */
+  font-weight: 600; /* Semibold */
+  color: var(--text-primary); /* Or a specific title color */
+  margin-top: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color); /* Subtle separator */
+}
+.assistant-message .message-content h2:first-child {
+  margin-top: 0; /* No top margin for the very first title */
+}
+
+.assistant-message .message-content p {
+  margin-top: 0;
+  margin-bottom: 0.75em; /* Space between paragraphs */
+  line-height: 1.5; /* Improved readability for paragraphs */
+}
+.assistant-message .message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.assistant-message .message-content strong {
+  font-weight: 600; /* Ensure strong is bolder than normal text */
+  color: var(--text-primary); /* Or inherit */
+}
+
+.assistant-message .message-content em {
+  font-style: italic;
+}
+
+.assistant-message .message-content ul {
+  list-style-type: disc; /* Standard bullets */
+  margin-top: 0.5em;
+  margin-bottom: 0.75em;
+  padding-left: 20px; /* Indent list items */
+}
+html[dir="rtl"] .assistant-message .message-content ul {
+  padding-left: 0;
+  padding-right: 20px; /* Indent list items for RTL */
+}
+
+
+.assistant-message .message-content li {
+  margin-bottom: 0.4em; /* Space between list items */
+}
+
+.assistant-message .message-content a {
+  color: var(--wa-green-dark); /* Use a theme color for links */
+  text-decoration: underline;
+  font-weight: 500;
+}
+.assistant-message .message-content a:hover {
+  color: var(--wa-green); /* Darken on hover */
+  text-decoration: none;
+}
+/* End of styles for AI-generated HTML content */
+
+.system-message {
+  text-align: center;
+  font-size: 0.75em; /* Smaller system messages */
+    color: var(--text-light);
+    margin: 12px auto; /* Centered with more margin */
+    padding: 4px 8px;
+    background-color: rgba(0,0,0,0.03);
+    border-radius: 4px;
+    max-width: fit-content;
+}
+
+/* AI Status Message (below input) */
+#ai-status-message.status-message { /* More specific selector */
+    font-size: 0.8em;
+    margin-top: 6px; /* Closer to input */
+    padding: 6px 10px;
+    border-radius: 4px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    display: block; /* Ensure it takes width if content is short */
+}
+/* ... (status-ok, status-error styles remain similar but can be tweaked) */
+
+
+/* Footer */
+.panel-footer {
+    padding: 8px 16px; /* Reduced padding */
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-input-area);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+#debug-connection-info {
+    font-size: 0.75em; /* Smaller debug info */
+    color: var(--text-light);
+}
+.button-icon { /* For refresh button in footer */
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px; /* Larger icon */
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+.button-icon:hover {
+    color: var(--text-primary);
+    background-color: rgba(0,0,0,0.05);
+}
+
+/* Spinner */
+.spinner-small {
+    width: 16px; /* Standard size */
+    height: 16px;
+    border: 2px solid rgba(0,0,0,0.1);
+    border-left-color: var(--wa-green); /* Use theme color */
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 0.7s linear infinite;
+}
+html[dir="rtl"] .spinner-small {
+    margin-right: 8px; /* Consistent spacing */
+    margin-left: 0;
+}
+html[dir="ltr"] .spinner-small {
+    margin-left: 8px;
+    margin-right: 0;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* FontAwesome base */
+.fa, .fas, .far, .fal, .fab {
+    display: inline-block;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    line-height: 1; /* Ensure consistent line height */
+}

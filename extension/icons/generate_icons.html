@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Generator</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .canvas-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .icon-wrapper {
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        button {
+            background-color: #128C7E;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #075E54;
+        }
+    </style>
+</head>
+<body>
+    <h1>WhatsApp AI Co-Pilot Icon Generator</h1>
+    <p>Click on each canvas to download the icon image</p>
+    
+    <div class="canvas-container">
+        <div class="icon-wrapper">
+            <canvas id="icon16" width="16" height="16"></canvas>
+            <button onclick="downloadIcon('icon16', 16)">Download 16x16</button>
+        </div>
+        <div class="icon-wrapper">
+            <canvas id="icon48" width="48" height="48"></canvas>
+            <button onclick="downloadIcon('icon48', 48)">Download 48x48</button>
+        </div>
+        <div class="icon-wrapper">
+            <canvas id="icon128" width="128" height="128"></canvas>
+            <button onclick="downloadIcon('icon128', 128)">Download 128x128</button>
+        </div>
+    </div>
+    
+    <script>
+        function drawIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#128C7E');   // WhatsApp green
+            gradient.addColorStop(1, '#25D366');   // WhatsApp light green
+            
+            // Fill background
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Add robot icon
+            ctx.fillStyle = 'white';
+            
+            // Draw a simple robot face based on size
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const faceSize = size * 0.7;
+            
+            // Robot head (rounded rectangle)
+            const cornerRadius = size * 0.15;
+            const x = centerX - faceSize / 2;
+            const y = centerY - faceSize / 2;
+            const width = faceSize;
+            const height = faceSize;
+            
+            ctx.beginPath();
+            ctx.moveTo(x + cornerRadius, y);
+            ctx.lineTo(x + width - cornerRadius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + cornerRadius);
+            ctx.lineTo(x + width, y + height - cornerRadius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - cornerRadius, y + height);
+            ctx.lineTo(x + cornerRadius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - cornerRadius);
+            ctx.lineTo(x, y + cornerRadius);
+            ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Robot eyes
+            ctx.fillStyle = '#128C7E';
+            const eyeSize = size * 0.15;
+            const eyeY = centerY - eyeSize * 0.5;
+            const eyeSpacing = size * 0.2;
+            
+            // Left eye
+            ctx.beginPath();
+            ctx.fillRect(centerX - eyeSpacing - eyeSize/2, eyeY, eyeSize, eyeSize);
+            
+            // Right eye
+            ctx.beginPath();
+            ctx.fillRect(centerX + eyeSpacing - eyeSize/2, eyeY, eyeSize, eyeSize);
+            
+            // Robot mouth
+            ctx.fillStyle = '#128C7E';
+            const mouthWidth = size * 0.3;
+            const mouthHeight = size * 0.1;
+            const mouthY = centerY + size * 0.15;
+            
+            ctx.beginPath();
+            ctx.fillRect(centerX - mouthWidth/2, mouthY, mouthWidth, mouthHeight);
+            
+            // Add antenna
+            ctx.fillStyle = '#128C7E';
+            const antennaWidth = size * 0.1;
+            const antennaHeight = size * 0.2;
+            
+            ctx.beginPath();
+            ctx.fillRect(centerX - antennaWidth/2, y - antennaHeight, antennaWidth, antennaHeight);
+            
+            // Add antenna ball
+            ctx.beginPath();
+            ctx.arc(centerX, y - antennaHeight, size * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function downloadIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = `icon${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Draw all icons on load
+        window.onload = function() {
+            drawIcon('icon16', 16);
+            drawIcon('icon48', 48);
+            drawIcon('icon128', 128);
+        };
+    </script>
+</body>
+</html> 

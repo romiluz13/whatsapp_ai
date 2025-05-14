@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl"> <!-- Set language to Hebrew and direction to RTL -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp תובנות AI</title> <!-- Translated Title -->
+    <link rel="stylesheet" href="fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+    <div id="ai-copilot-panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <i class="fab fa-whatsapp"></i>
+                <span>WhatsApp תובנות AI</span> <!-- Translated Panel Title -->
+            </div>
+            <div class="panel-header-controls">
+                <button id="fold-button" class="fold-button" aria-label="החלף מצב סרגל צד"> <!-- Translated Aria Label -->
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Top section for connection and group selection -->
+        <div class="panel-top-controls">
+            <div id="whatsapp-status-area" class="status-section">
+                <p id="whatsapp-connection-status">מאמת חיבור...</p> <!-- Translated Initializing -->
+                <div id="whatsapp-qr-code-area" style="display: none;">
+                    <p>סרוק קוד QR עם WhatsApp:</p> <!-- Translated -->
+                    <div id="whatsapp-qr-code-img"></div>
+                </div>
+            </div>
+
+            <div id="chat-selector-area" class="control-section" style="display: none;">
+                <label for="chat-selector">בחר קבוצה:</label> <!-- Translated -->
+                <select id="chat-selector" name="chat-selector">
+                    <option value="">-- טוען קבוצות --</option> <!-- Translated -->
+                </select>
+            </div>
+            <!-- Summarize button can be here or integrated into chat input later -->
+            <button id="summarize-group-button" class="button full-width" disabled style="display: none; margin: 0 15px 10px;">
+                <i class="fas fa-file-alt"></i> סכם קבוצה <!-- Translated -->
+            </button>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-area-wrapper">
+            <div class="message-list" id="ai-chat-messages">
+                <!-- AI summaries and answers will appear here, unified -->
+            </div>
+        </div>
+
+        <!-- Chat Input Area (Fixed at Bottom) -->
+        <div class="chat-input-area control-section">
+            <textarea id="ai-query-input" placeholder="שאל על הקבוצה או המשך שיחה..." disabled></textarea> <!-- Translated Placeholder -->
+            <button id="ask-question-button" class="button" disabled>
+                <i class="fas fa-paper-plane"></i> <!-- Changed icon to send -->
+                <!-- Ask text removed, icon implies action -->
+            </button>
+            <p id="ai-status-message" class="status-message" style="display: none;"></p>
+        </div>
+        
+        <div class="panel-footer">
+            <p id="debug-connection-info">חיבור לשרת: מנותק</p> <!-- Translated -->
+            <button id="refresh-button" class="button-icon" aria-label="רענן חיבור"> <!-- Translated Aria Label -->
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+
+    </div> <!-- End ai-copilot-panel -->
+
+    <!-- sidebar-toggle might be removed or re-purposed if collapsing is handled differently -->
+    <div id="sidebar-toggle" class="hidden" aria-label="פתח סרגל צד"> <!-- Translated Aria Label -->
+        <span class="toggle-icon"><i class="fas fa-chevron-left"></i></span>
+    </div>
+
+    <script src="panel.js"></script>
+</body>
+</html>
