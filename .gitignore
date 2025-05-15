@@ -35,6 +35,8 @@ Desktop.ini
 # Project Specific
 memory-bank/
 backend/.env
+backend/.wwebjs_auth/
+
 
 # Build output (if any in the future)
 dist/
