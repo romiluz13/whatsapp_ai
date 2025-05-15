@@ -9,7 +9,10 @@ let sidebarOpen = true;
 const BACKEND_URL = 'http://localhost:3000';
 let currentSelectedChatId = null; // Stores the ID of the currently selected chat
 let currentSelectedChatName = null; // Stores the name of the currently selected chat
-let fetchedMessagesForSelectedChat = []; // Stores messages for AI processing
+let fetchedMessagesForSelectedChat = []; // Stores messages for AI processing (role might change)
+
+// NEW: Date filter elements
+let startDateInput, endDateInput, clearDatesButton, dateFilterAreaEl;
 
 // DOM element references for chat selection and status
 let chatSelectorDropdown, whatsappStatusArea, whatsappConnectionStatus, whatsappQrCodeArea, whatsappQrCodeImg, chatSelectorArea, summarizeButton, askQuestionButton, aiQueryInput, aiChatMessagesDiv, foldButtonElement; // Removed groupInsightsSection
@@ -31,6 +34,22 @@ document.addEventListener('DOMContentLoaded', () => {
   aiChatMessagesDiv = document.getElementById('ai-chat-messages');
   // switchSideButton = document.getElementById('switch-side-button'); // Removed
   foldButtonElement = document.getElementById('fold-button');
+
+  // NEW: Get date filter elements
+  startDateInput = document.getElementById('startDate');
+  endDateInput = document.getElementById('endDate');
+  clearDatesButton = document.getElementById('clear-dates-button');
+  dateFilterAreaEl = document.getElementById('date-filter-area');
+
+  // NEW: Add event listener for Clear Dates button
+  if (clearDatesButton) {
+    clearDatesButton.addEventListener('click', () => {
+        if (startDateInput) startDateInput.value = '';
+        if (endDateInput) endDateInput.value = '';
+        // Note: This does not automatically re-trigger a message load or AI op.
+        // The next Summarize/Ask will use the now-cleared dates.
+    });
+  }
 
 
   // Create and show a loading indicator immediately when the panel loads
@@ -103,6 +122,7 @@ function updateWhatsappConnectionStatus(message, isError = false) {
       if(whatsappQrCodeArea) whatsappQrCodeArea.style.display = 'block';
       // if(groupInsightsControls) groupInsightsControls.style.display = 'none'; // Removed
       if(summarizeButton) summarizeButton.style.display = 'none';
+      if(dateFilterAreaEl) dateFilterAreaEl.style.display = 'none'; // NEW: Hide date filter
       const chatInputArea = document.querySelector('.chat-input-area');
       if(chatInputArea) chatInputArea.style.display = 'none';
     } else {
@@ -145,6 +165,7 @@ async function fetchAndDisplayQrCode() {
                 if(chatSelectorArea) chatSelectorArea.style.display = 'none';
                 // if(groupInsightsSection) groupInsightsSection.style.display = 'none'; // Removed
                 if(summarizeButton) summarizeButton.style.display = 'none';
+                if(dateFilterAreaEl) dateFilterAreaEl.style.display = 'none'; // NEW: Hide date filter
                 const chatInputArea = document.querySelector('.chat-input-area');
                 if(chatInputArea) chatInputArea.style.display = 'none';
             } else {
@@ -311,7 +332,8 @@ function showAILoading(feature) {
  * @param {'summarize' | 'ask'} feature - The AI feature that has finished loading.
  */
 function hideAILoading(feature) {
-    const messagesAvailable = fetchedMessagesForSelectedChat.length > 0;
+    // const messagesAvailable = fetchedMessagesForSelectedChat.length > 0; // OLD
+    const messagesAvailable = !!currentSelectedChatId; // NEW: Enable if a chat is selected
     const chatInputArea = document.querySelector('.chat-input-area');
 
     if (feature === 'summarize' && summarizeButton) {
@@ -339,6 +361,27 @@ function hideAILoading(feature) {
  * Sets up event listeners for the AI feature buttons (Summarize Group, Ask Question).
  * Handles API calls to the backend for these features and updates the UI.
  */
+
+// NEW: Validation function for DD/MM/YYYY format
+function isValidDdMmYyyy(dateString) {
+    if (!dateString) return true; // Allow empty (no date provided)
+    const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+    const parts = dateString.match(regex);
+    if (!parts) return false;
+
+    const day = parseInt(parts[1], 10);
+    const month = parseInt(parts[2], 10); // Month is 1-12 from input
+    const year = parseInt(parts[3], 10);
+
+    if (year < 1000 || year > 3000 || month === 0 || month > 12) return false;
+
+    const monthLength = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (year % 400 === 0 || (year % 100 !== 0 && year % 4 === 0)) {
+        monthLength[1] = 29; // Leap year
+    }
+    return day > 0 && day <= monthLength[month - 1];
+}
+
 function setupNewFeatureButtons() {
     if (!summarizeButton || !askQuestionButton || !aiQueryInput) {
         console.error('AI feature buttons or input not found in DOM.');
@@ -350,17 +393,33 @@ function setupNewFeatureButtons() {
     hideAILoading('ask');       // Set initial state
 
     summarizeButton.addEventListener('click', async () => {
-        if (!currentSelectedChatId || fetchedMessagesForSelectedChat.length === 0) {
-            addMessageToChat('assistant', 'יש לבחור קבוצה עם הודעות לפני בקשת סיכום.', true); // Translated
+        if (!currentSelectedChatId) {
+            addMessageToChat('assistant', 'יש לבחור קבוצה לפני בקשת סיכום.', true);
             return;
         }
-        addMessageToChat('user', `מבקש סיכום עבור ${currentSelectedChatName || 'הקבוצה הנבחרת'}.`); // Translated
+
+        const startDate = startDateInput ? startDateInput.value.trim() : null;
+        const endDate = endDateInput ? endDateInput.value.trim() : null;
+
+        if ((startDate && !isValidDdMmYyyy(startDate)) || (endDate && !isValidDdMmYyyy(endDate))) {
+            addMessageToChat('assistant', 'פורמט תאריך לא תקין. אנא השתמש בפורמט DD/MM/YYYY או השאר ריק.', true); // Translated
+            return;
+        }
+        
+        // If only one date is provided, decide if that's an error or a specific behavior
+        // For now, we allow one date to be set (backend handles this as open-ended range if service supports it)
+
+        addMessageToChat('user', `מבקש סיכום עבור ${currentSelectedChatName || 'הקבוצה הנבחרת'}${startDate || endDate ? ` (תאריכים: ${startDate || ''} - ${endDate || ''})` : ''}.`);
         showAILoading('summarize');
         try {
             const response = await fetch(`${BACKEND_URL}/ai/summarize`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: fetchedMessagesForSelectedChat })
+                body: JSON.stringify({
+                    chatId: currentSelectedChatId,
+                    startDate: startDate || null, // Send null if empty
+                    endDate: endDate || null     // Send null if empty
+                })
             });
             const data = await response.json();
             if (!response.ok) {
@@ -381,19 +440,32 @@ function setupNewFeatureButtons() {
             addMessageToChat('assistant', 'יש להקליד שאלה תחילה.', true); // Translated
             return;
         }
-        if (!currentSelectedChatId || fetchedMessagesForSelectedChat.length === 0) {
-            addMessageToChat('assistant', 'יש לבחור קבוצה עם הודעות לפני שליחת שאלה.', true); // Translated
+        if (!currentSelectedChatId) {
+            addMessageToChat('assistant', 'יש לבחור קבוצה עם הודעות לפני שליחת שאלה.', true);
+            return;
+        }
+        
+        const startDate = startDateInput ? startDateInput.value.trim() : null;
+        const endDate = endDateInput ? endDateInput.value.trim() : null;
+
+        if ((startDate && !isValidDdMmYyyy(startDate)) || (endDate && !isValidDdMmYyyy(endDate))) {
+            addMessageToChat('assistant', 'פורמט תאריך לא תקין. אנא השתמש בפורמט DD/MM/YYYY או השאר ריק.', true); // Translated
             return;
         }
 
-        addMessageToChat('user', `שאלה: ${question}`); // Translated
+        addMessageToChat('user', `שאלה: ${question}${startDate || endDate ? ` (בהקשר תאריכים: ${startDate || ''} - ${endDate || ''})` : ''}`);
         showAILoading('ask');
         
         try {
             const response = await fetch(`${BACKEND_URL}/ai/ask`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: fetchedMessagesForSelectedChat, question: question })
+                body: JSON.stringify({
+                    chatId: currentSelectedChatId,
+                    question: question,
+                    startDate: startDate || null, // Send null if empty
+                    endDate: endDate || null     // Send null if empty
+                })
             });
             const data = await response.json();
             if (!response.ok) {
@@ -437,14 +509,17 @@ async function checkBackendAndWhatsAppStatus() {
                 if(chatSelectorArea) chatSelectorArea.style.display = 'none';
                 // if(groupInsightsSection) groupInsightsSection.style.display = 'none'; // Removed
                 if(summarizeButton) summarizeButton.style.display = 'none';
+                if(dateFilterAreaEl) dateFilterAreaEl.style.display = 'none'; // Ensure date filter is hidden
                 const chatInputArea = document.querySelector('.chat-input-area');
                 if(chatInputArea) chatInputArea.style.display = 'none';
                 fetchAndDisplayQrCode();
             } else {
+                // This case implies not ready and no QR, so hide most controls
                 if(whatsappQrCodeArea) whatsappQrCodeArea.style.display = 'none';
                 if(chatSelectorArea) chatSelectorArea.style.display = 'none';
                 // if(groupInsightsSection) groupInsightsSection.style.display = 'none'; // Removed
                 if(summarizeButton) summarizeButton.style.display = 'none';
+                if(dateFilterAreaEl) dateFilterAreaEl.style.display = 'none';
                 const chatInputArea = document.querySelector('.chat-input-area');
                 if(chatInputArea) chatInputArea.style.display = 'none';
             }
@@ -455,6 +530,7 @@ async function checkBackendAndWhatsAppStatus() {
             if(chatSelectorArea) chatSelectorArea.style.display = 'none';
             // if(groupInsightsSection) groupInsightsSection.style.display = 'none'; // Removed
             if(summarizeButton) summarizeButton.style.display = 'none';
+            if(dateFilterAreaEl) dateFilterAreaEl.style.display = 'none'; // NEW: Hide date filter
             const chatInputArea = document.querySelector('.chat-input-area');
             if(chatInputArea) chatInputArea.style.display = 'none';
         }
@@ -464,6 +540,7 @@ async function checkBackendAndWhatsAppStatus() {
         if(chatSelectorArea) chatSelectorArea.style.display = 'none';
         // if(groupInsightsSection) groupInsightsSection.style.display = 'none'; // Removed
         if(summarizeButton) summarizeButton.style.display = 'none';
+        if(dateFilterAreaEl) dateFilterAreaEl.style.display = 'none'; // NEW: Hide date filter
         const chatInputArea = document.querySelector('.chat-input-area');
         if(chatInputArea) chatInputArea.style.display = 'none';
     }
@@ -495,13 +572,21 @@ function initAuthAndGroupListing() {
                 showStatus(`טוען הודעות עבור ${currentSelectedChatName}...`); // Translated
                 fetchedMessagesForSelectedChat = [];
                 
-                // Show summarize button and chat input area
+                // Show summarize button, date filter, and chat input area
                 if(summarizeButton) summarizeButton.style.display = 'flex'; else console.warn("Summarize button not found for display styling");
+                if(dateFilterAreaEl) dateFilterAreaEl.style.display = 'block'; // Ensure date filter is shown
                 if(chatInputArea) chatInputArea.style.display = 'flex'; else console.warn("Chat input area not found for display styling");
 
-                hideAILoading('summarize'); // Will set disabled state based on messagesAvailable (currently false)
-                hideAILoading('ask');       // Will set disabled state based on messagesAvailable (currently false)
+                // fetchedMessagesForSelectedChat is no longer populated here directly for AI ops.
+                // The AI buttons will now trigger fetches with date ranges.
+                // We still call hideAILoading to correctly set button states based on chat selection.
+                hideAILoading('summarize');
+                hideAILoading('ask');
 
+                // The message fetching logic below is now primarily for display/context,
+                // not directly for AI operations which will re-fetch with dates.
+                // However, keeping it can be useful for general context or if other features use it.
+                // For this iteration, we'll keep it, but AI ops will ignore fetchedMessagesForSelectedChat.
                 try {
                     const messageCount = 1000;
                     const response = await fetch(`${BACKEND_URL}/groups/${currentSelectedChatId}/messages?count=${messageCount}`);
@@ -529,8 +614,12 @@ function initAuthAndGroupListing() {
                 currentSelectedChatName = null;
                 fetchedMessagesForSelectedChat = [];
                 if(summarizeButton) summarizeButton.style.display = 'none';
+                if(dateFilterAreaEl) dateFilterAreaEl.style.display = 'none'; // Ensure date filter is hidden
                 if(chatInputArea) chatInputArea.style.display = 'none';
                 showStatus('לא נבחרה קבוצה.'); // Translated
+                // Also update AI button states when no group is selected
+                hideAILoading('summarize');
+                hideAILoading('ask');
             }
         });
     }

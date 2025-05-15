@@ -140,7 +140,9 @@ app.get('/groups', async (req: Request, res: Response) => {
  * @route GET /groups/:groupId/messages
  * @description Fetches recent messages from a specified group.
  * @param {string} req.params.groupId - The ID of the group.
- * @param {string} [req.query.count] - Optional number of messages to fetch (defaults to 50).
+ * @param {string} [req.query.count] - Optional number of messages to fetch (defaults to 1000).
+ * @param {string} [req.query.startDate] - Optional start date (YYYY-MM-DD).
+ * @param {string} [req.query.endDate] - Optional end date (YYYY-MM-DD).
  * @returns {Array<object>} JSON array of formatted message objects, or an error message.
  */
 app.get('/groups/:groupId/messages', async (req: Request, res: Response) => {
@@ -149,7 +151,10 @@ app.get('/groups/:groupId/messages', async (req: Request, res: Response) => {
     }
     const { groupId } = req.params;
     const messageCountParam = req.query.count as string;
-    // Default to 1000 messages, PRD mentions "configurable number of messages"
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+    
+    // Default to 1000 messages if not specified or if date range is used (as a base pool)
     const messageCount = messageCountParam ? parseInt(messageCountParam, 10) : 1000;
 
     if (isNaN(messageCount) || messageCount <= 0) {
@@ -157,7 +162,7 @@ app.get('/groups/:groupId/messages', async (req: Request, res: Response) => {
     }
 
     try {
-        const messages = await getGroupMessages(groupId, messageCount);
+        const messages = await getGroupMessages(groupId, messageCount, startDate, endDate);
         // We might want to map messages to a simpler structure for the frontend
         const formattedMessages = messages.map(msg => ({
             id: msg.id._serialized,
@@ -176,22 +181,32 @@ app.get('/groups/:groupId/messages', async (req: Request, res: Response) => {
 
 /**
  * @route POST /ai/summarize
- * @description Generates an AI-powered summary for a given set of messages.
- * @param {Array<Message>} req.body.messages - An array of message objects (compatible with `whatsapp-web.js` Message structure).
+ * @description Generates an AI-powered summary for messages from a specific chat, optionally within a date range.
+ * @param {string} req.body.chatId - The ID of the chat.
+ * @param {string} [req.body.startDate] - Optional start date (YYYY-MM-DD).
+ * @param {string} [req.body.endDate] - Optional end date (YYYY-MM-DD).
  * @returns {object} JSON object with the `summary` (string), or an error message.
  */
 app.post('/ai/summarize', async (req: Request, res: Response) => {
-    const { messages } = req.body as { messages: Message[] }; // Assuming frontend sends full Message objects or compatible structure
+    const { chatId, startDate, endDate } = req.body as { chatId: string, startDate?: string, endDate?: string };
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-        return res.status(400).json({ error: 'Messages are required for summarization.' });
+    if (!chatId) {
+        return res.status(400).json({ error: 'Chat ID is required for summarization.' });
+    }
+    if (!isClientReady()) {
+        return res.status(503).json({ error: 'WhatsApp client not ready.' });
     }
 
     try {
-        // The AI service expects Message[] from whatsapp-web.js.
-        // If frontend sends a simplified version, ensure it's compatible or transform it.
-        // For now, assuming compatible structure.
-        const summary = await generateSummary(messages);
+        // Fetch messages using the service, applying date filters if provided
+        // Default to 1000 messages if no date range, or as a base for filtering
+        const messages = await getGroupMessages(chatId, 1000, startDate, endDate);
+
+        if (!messages || messages.length === 0) {
+            return res.status(404).json({ error: 'No messages found for the given criteria to summarize.' });
+        }
+        
+        const summary = await generateSummary(messages, startDate, endDate); // Pass startDate and endDate
         res.json({ summary });
     } catch (error: any) {
         console.error('Error generating summary:', error);
@@ -201,23 +216,34 @@ app.post('/ai/summarize', async (req: Request, res: Response) => {
 
 /**
  * @route POST /ai/ask
- * @description Answers a question based on a given set of messages and a question string using AI.
- * @param {Array<Message>} req.body.messages - An array of message objects for context.
+ * @description Answers a question based on messages from a specific chat, optionally within a date range.
+ * @param {string} req.body.chatId - The ID of the chat.
  * @param {string} req.body.question - The question to be answered.
+ * @param {string} [req.body.startDate] - Optional start date (YYYY-MM-DD).
+ * @param {string} [req.body.endDate] - Optional end date (YYYY-MM-DD).
  * @returns {object} JSON object with the `answer` (string), or an error message.
  */
 app.post('/ai/ask', async (req: Request, res: Response) => {
-    const { messages, question } = req.body as { messages: Message[], question: string };
+    const { chatId, question, startDate, endDate } = req.body as { chatId: string, question: string, startDate?: string, endDate?: string };
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-        return res.status(400).json({ error: 'Messages context is required to answer a question.' });
+    if (!chatId) {
+        return res.status(400).json({ error: 'Chat ID is required to answer a question.' });
     }
     if (!question || typeof question !== 'string' || question.trim() === "") {
         return res.status(400).json({ error: 'A question is required.' });
     }
+    if (!isClientReady()) {
+        return res.status(503).json({ error: 'WhatsApp client not ready.' });
+    }
 
     try {
-        // Similar to summarize, assuming compatible Message structure.
+        // Fetch messages using the service, applying date filters if provided
+        const messages = await getGroupMessages(chatId, 1000, startDate, endDate);
+
+        if (!messages || messages.length === 0) {
+            return res.status(404).json({ error: 'No messages found for the given criteria to answer the question.' });
+        }
+
         const answer = await answerQuestion(messages, question);
         res.json({ answer });
     } catch (error: any) {

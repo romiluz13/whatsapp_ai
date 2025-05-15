@@ -1,2 +1,3 @@
-2025/05/14-20:58:57.293 a103 Creating DB /Users/rom.iluz/whatsapp.ai_v2/backend/.wwebjs_auth/session/Default/Session Storage since it was missing.
-2025/05/14-20:58:57.303 a103 Reusing MANIFEST /Users/rom.iluz/whatsapp.ai_v2/backend/.wwebjs_auth/session/Default/Session Storage/MANIFEST-000001
+2025/05/15-16:42:06.154 a303 Reusing MANIFEST /Users/rom.iluz/whatsapp.ai_v2/backend/.wwebjs_auth/session/Default/Session Storage/MANIFEST-000001
+2025/05/15-16:42:06.154 a303 Recovering log #3
+2025/05/15-16:42:06.154 a303 Reusing old log /Users/rom.iluz/whatsapp.ai_v2/backend/.wwebjs_auth/session/Default/Session Storage/000003.log 

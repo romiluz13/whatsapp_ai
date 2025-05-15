@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp תובנות AI</title> <!-- Translated Title -->
+    <title>WhatsApp AI</title> <!-- Translated Title -->
     <link rel="stylesheet" href="fontawesome/css/all.min.css">
     <link rel="stylesheet" href="panel.css">
 </head>
@@ -12,7 +12,7 @@
         <div class="panel-header">
             <div class="panel-title">
                 <i class="fab fa-whatsapp"></i>
-                <span>WhatsApp תובנות AI</span> <!-- Translated Panel Title -->
+                <span>WhatsApp AI</span> <!-- Translated Panel Title -->
             </div>
             <div class="panel-header-controls">
                 <button id="fold-button" class="fold-button" aria-label="החלף מצב סרגל צד"> <!-- Translated Aria Label -->
@@ -36,6 +36,19 @@
                 <select id="chat-selector" name="chat-selector">
                     <option value="">-- טוען קבוצות --</option> <!-- Translated -->
                 </select>
+            </div>
+
+            <!-- NEW: Date Range Filter Area -->
+            <div id="date-filter-area" class="control-section" style="display: none; margin: 0 15px 10px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label for="startDate" style="font-size: 0.9em; color: #555;">תאריך התחלה: <span style="font-size: 0.9em; color: #777;">(DD/MM/YYYY)</span></label>
+                    <input type="text" id="startDate" name="startDate" placeholder="DD/MM/YYYY" style="font-size: 0.9em; padding: 3px; border: 1px solid #ccc; border-radius: 3px; width: 100px; text-align: center;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label for="endDate" style="font-size: 0.9em; color: #555;">תאריך סיום: <span style="font-size: 0.9em; color: #777;">(DD/MM/YYYY)</span></label>
+                    <input type="text" id="endDate" name="endDate" placeholder="DD/MM/YYYY" style="font-size: 0.9em; padding: 3px; border: 1px solid #ccc; border-radius: 3px; width: 100px; text-align: center;">
+                </div>
+                <button id="clear-dates-button" style="font-size: 0.85em; padding: 3px 8px; margin-top: 5px; border: 1px solid #ddd; background-color: #f0f0f0; color: #333; border-radius: 3px; cursor: pointer;">נקה תאריכים</button>
             </div>
             <!-- Summarize button can be here or integrated into chat input later -->
             <button id="summarize-group-button" class="button full-width" disabled style="display: none; margin: 0 15px 10px;">

@@ -162,11 +162,18 @@ const getGroups = async (): Promise<{ id: string; name: string }[]> => {
 /**
  * Fetches a specified number of recent messages from a given group.
  * @param {string} groupId - The ID of the group to fetch messages from.
- * @param {number} [messageCount=1000] - The number of messages to fetch.
+ * @param {number} [messageCount=1000] - The number of messages to fetch if no date range is specified, or the initial batch size if dates are specified.
+ * @param {string} [startDate] - Optional start date string (e.g., "YYYY-MM-DD").
+ * @param {string} [endDate] - Optional end date string (e.g., "YYYY-MM-DD").
  * @returns {Promise<Message[]>} A promise that resolves to an array of `whatsapp-web.js` Message objects.
  * @throws Will throw an error if the client is not ready, or if the group is not found or messages cannot be fetched.
  */
-const getGroupMessages = async (groupId: string, messageCount: number = 1000): Promise<Message[]> => {
+const getGroupMessages = async (
+    groupId: string,
+    messageCount: number = 1000,
+    startDate?: string,
+    endDate?: string
+): Promise<Message[]> => {
     if (!isClientReady()) {
         throw new Error("WhatsApp client not ready.");
     }
@@ -177,7 +184,46 @@ const getGroupMessages = async (groupId: string, messageCount: number = 1000): P
             throw new Error(`Group with ID ${groupId} not found or is not a group.`);
         }
         // Fetch messages, whatsapp-web.js fetches recent messages by default with limit
-        const messages = await chat.fetchMessages({ limit: messageCount });
+        // If dates are provided, we might fetch a larger batch to ensure coverage, then filter.
+        // For simplicity, we'll use messageCount as the limit for the initial fetch.
+        // If date filtering is active, messageCount effectively becomes the max pool size for filtering.
+        const messagesToFetch = (startDate && endDate) ? Math.max(messageCount, 1000) : messageCount; // Ensure a decent pool if filtering
+        
+        let messages = await chat.fetchMessages({ limit: messagesToFetch });
+
+        if (startDate && endDate) {
+            console.log(`[WHATSAPP.SERVICE] Filtering messages for group ${groupId} between ${startDate} (DD/MM/YYYY) and ${endDate} (DD/MM/YYYY)`);
+            
+            const parseDdMmYyyy = (dateString: string): Date | null => {
+                const parts = dateString.split('/');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed in JS Date
+                    const year = parseInt(parts[2], 10);
+                    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                        return new Date(year, month, day);
+                    }
+                }
+                return null;
+            };
+
+            const startDateObj = parseDdMmYyyy(startDate);
+            const endDateObj = parseDdMmYyyy(endDate);
+
+            if (!startDateObj || !endDateObj) {
+                console.warn(`[WHATSAPP.SERVICE] Invalid DD/MM/YYYY date format provided for group ${groupId}. Start: ${startDate}, End: ${endDate}. Returning all fetched messages.`);
+            } else {
+                const startTimestamp = startDateObj.setHours(0, 0, 0, 0) / 1000;
+                const endTimestamp = endDateObj.setHours(23, 59, 59, 999) / 1000;
+
+                messages = messages.filter(msg => {
+                    // Assuming msg.timestamp is a Unix timestamp in seconds
+                    return msg.timestamp >= startTimestamp && msg.timestamp <= endTimestamp;
+                });
+                console.log(`[WHATSAPP.SERVICE] Found ${messages.length} messages after DD/MM/YYYY date filtering for group ${groupId}.`);
+            }
+        }
+        
         return messages.map(msg => msg); // Ensure it's an array of Message instances
     } catch (error) {
         console.error(`Error fetching messages for group ${groupId}:`, error);
