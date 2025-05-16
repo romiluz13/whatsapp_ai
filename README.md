@@ -7,6 +7,19 @@
 [![Node.js](https://img.shields.io/badge/Node.js->=18.x-blue.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-blue.svg)](https://www.typescriptlang.org/)
 
+---
+
+# 🔥 **AI-Powered Setup: Your README is the Key!** 🔥
+
+**Got an AI Coding Assistant? (Cursor, Copilot, etc.)**
+
+Skip the manual steps! Just **copy this entire README.md file** and paste it into your AI assistant.
+Tell it: *"Set up this project for me."*
+
+Your AI will handle the cloning, installations, and configurations following the detailed instructions below. Welcome to 2025! 😉
+
+---
+
 WhatsApp Group Insights AI is an open-source Chrome extension that brings the power of Large Language Models (LLMs) like `gpt-4o-mini` directly to your WhatsApp Web interface. Get quick, intelligent summaries of long group discussions and ask specific questions about the content, saving you time and keeping you in the loop.
 
 This project has been refactored for a modern, intuitive user experience and a clean, maintainable codebase, making it ready for community contributions and further innovation!
