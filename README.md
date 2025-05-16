@@ -110,16 +110,17 @@ Getting started is easy! Follow these steps:
     # or
     # yarn install
     ```
-4.  **Configure Environment:**
-    *   Create a `.env` file in the `backend` directory (you can copy from `.env.example` if provided).
-    *   **OpenAI API Key Configuration:** You have two options:
-        1.  **Recommended for ease of use:** After installing the extension (see below), open the extension panel in WhatsApp Web, click the settings icon (⚙️), and enter your OpenAI API key directly in the panel. This key will be stored locally in your browser's extension storage and used for AI requests.
-        2.  **Alternative (.env file):** Add your OpenAI API key to the `.env` file. If a key is also set in the extension panel, the panel's key will take precedence.
-            ```env
-            OPENAI_API_KEY=your_openai_api_key_here # Optional if using panel settings
-            OPENAI_MODEL=gpt-4o-mini # Or your preferred model
-            PORT=3000 # Optional, defaults to 3000
-            ```
+4.  **Set Your OpenAI API Key (Choose ONE method):**
+    *   🔑 **EASIEST METHOD (Recommended): Use the Extension Panel!**
+        1.  After setting up the backend and loading the extension (see steps below), open WhatsApp Web.
+        2.  Click the extension icon, then the **settings icon (⚙️)** within the panel.
+        3.  Enter your OpenAI API key in the designated field and click "Save API Key".
+        4.  *That's it! This key is stored locally in your browser and will be used for all AI requests.*
+    *   ⚙️ **Alternative Method (.env file for backend):**
+        1.  Create a `.env` file in the `backend` directory.
+        2.  Add your key: `OPENAI_API_KEY=your_openai_api_key_here`
+        3.  You can also set `OPENAI_MODEL` (defaults to `gpt-4o-mini`) and `PORT` (defaults to `3000`) here.
+        4.  *Note: If an API key is set in the extension panel, it will **override** the one in the `.env` file.*
 5.  **Start the Backend Server:**
     ```bash
     npm run dev
@@ -174,13 +175,14 @@ Contributions are the lifeblood of open-source and are **highly encouraged!** Wh
 
 We value clean code, innovative ideas, and a collaborative spirit. Clone the repo, play around, and let's improve it together!
 
-## 🗺️ Future Roadmap
+## 🤔 What's Next?
 
-*   User-configurable summary lengths/styles.
-*   Date-range or specific message count selection for fetching.
-*   Advanced caching strategies for performance and API cost optimization.
-*   Support for other LLM providers.
-*   More AI-driven group management features!
+While the core features are robust, here are some areas for potential future exploration by the community:
+
+*   Even more nuanced user controls for summary length/style (beyond prompt augmentation).
+*   Advanced caching strategies for further performance and API cost optimization.
+*   Support for other LLM providers or local models.
+*   Your great ideas!
 
 ## ❤️ Show Your Support
 
