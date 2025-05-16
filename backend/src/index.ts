@@ -190,10 +190,11 @@ app.get('/groups/:groupId/messages', async (req: Request, res: Response) => {
  * @param {string} [req.body.startDate] - Optional start date (YYYY-MM-DD).
  * @param {string} [req.body.endDate] - Optional end date (YYYY-MM-DD).
  * @param {boolean} [req.body.fetchOnlyUnread] - Optional. If true, attempts to fetch only unread messages for summarization.
+ * @param {string} [req.body.customPromptText] - Optional. Custom system prompt text.
  * @returns {object} JSON object with the `summary` (string), or an error message.
  */
 app.post('/ai/summarize', async (req: Request, res: Response) => {
-    const { chatId, startDate, endDate, fetchOnlyUnread } = req.body as { chatId: string, startDate?: string, endDate?: string, fetchOnlyUnread?: boolean };
+    const { chatId, startDate, endDate, fetchOnlyUnread, customPromptText } = req.body as { chatId: string, startDate?: string, endDate?: string, fetchOnlyUnread?: boolean, customPromptText?: string };
 
     if (!chatId) {
         return res.status(400).json({ error: 'Chat ID is required for summarization.' });
@@ -211,7 +212,7 @@ app.post('/ai/summarize', async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'No messages found for the given criteria to summarize.' });
         }
         
-        const summary = await generateSummary(messages, startDate, endDate); // Pass startDate and endDate
+        const summary = await generateSummary(messages, startDate, endDate, customPromptText); // Pass startDate, endDate, and customPromptText
         res.json({ summary });
     } catch (error: any) {
         console.error('Error generating summary:', error);
@@ -227,10 +228,11 @@ app.post('/ai/summarize', async (req: Request, res: Response) => {
  * @param {string} [req.body.startDate] - Optional start date (YYYY-MM-DD).
  * @param {string} [req.body.endDate] - Optional end date (YYYY-MM-DD).
  * @param {boolean} [req.body.fetchOnlyUnread] - Optional. If true, attempts to fetch only unread messages for context.
+ * @param {string} [req.body.customPromptText] - Optional. Custom system prompt text.
  * @returns {object} JSON object with the `answer` (string), or an error message.
  */
 app.post('/ai/ask', async (req: Request, res: Response) => {
-    const { chatId, question, startDate, endDate, fetchOnlyUnread } = req.body as { chatId: string, question: string, startDate?: string, endDate?: string, fetchOnlyUnread?: boolean };
+    const { chatId, question, startDate, endDate, fetchOnlyUnread, customPromptText } = req.body as { chatId: string, question: string, startDate?: string, endDate?: string, fetchOnlyUnread?: boolean, customPromptText?: string };
 
     if (!chatId) {
         return res.status(400).json({ error: 'Chat ID is required to answer a question.' });
@@ -250,7 +252,7 @@ app.post('/ai/ask', async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'No messages found for the given criteria to answer the question.' });
         }
 
-        const answer = await answerQuestion(messages, question);
+        const answer = await answerQuestion(messages, question, customPromptText); // Pass customPromptText
         res.json({ answer });
     } catch (error: any) {
         console.error('Error answering question:', error);

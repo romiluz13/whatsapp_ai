@@ -26,20 +26,13 @@ function injectSidebar() {
     sidebarContainer.id = SIDEBAR_ID;
 
     // --- State Management ---
-    let currentSidebarWidth = parseInt(localStorage.getItem('whatsappAiCopilotSidebarWidth')) || 450;
-    // Side is now fixed to 'right'
-    // let currentSidebarSide = localStorage.getItem('whatsappAiCopilotSidebarSide') || 'right';
-    const currentSidebarSide = 'right'; // Fixed
+    const FIXED_PANEL_WIDTH = 375; // Fixed panel width in pixels
     let isSidebarCollapsed = localStorage.getItem('whatsappAiCopilotSidebarCollapsed') === 'true';
-    let lastNonCollapsedWidth = currentSidebarWidth;
-
-    const minSidebarWidth = 200;
-    const maxSidebarWidth = 800;
+    // currentSidebarSide is fixed to 'right' and width is fixed, so no need for these in localStorage
 
     function saveSidebarState() {
-        localStorage.setItem('whatsappAiCopilotSidebarWidth', currentSidebarWidth);
-        // localStorage.setItem('whatsappAiCopilotSidebarSide', currentSidebarSide); // Side is fixed
         localStorage.setItem('whatsappAiCopilotSidebarCollapsed', isSidebarCollapsed);
+        // No longer saving width as it's fixed
     }
     // --- End State Management ---
 
@@ -62,34 +55,12 @@ function injectSidebar() {
         if (isSidebarCollapsed) {
             sidebarContainer.style.width = '0px';
         } else {
-            sidebarContainer.style.width = `${currentSidebarWidth}px`;
+            sidebarContainer.style.width = `${FIXED_PANEL_WIDTH}px`;
         }
-        // Side-specific styling (left/right) is removed as it's fixed to right
     }
     applySidebarStyling();
 
-    // Create a resizer element (always for right-side panel)
-    const resizer = document.createElement('div');
-    function updateResizerStyle() {
-        resizer.style.position = 'absolute';
-        resizer.style.top = '0';
-        resizer.style.width = '5px';
-        resizer.style.height = '100%';
-        resizer.style.cursor = 'col-resize';
-        resizer.style.background = '#e0e0e0';
-        resizer.style.zIndex = '1001';
-        resizer.style.borderLeft = '1px solid #c0c0c0';
-        resizer.style.borderRight = '1px solid #c0c0c0';
-        if (isSidebarCollapsed) {
-            resizer.style.display = 'none';
-        } else {
-            resizer.style.display = 'block';
-            resizer.style.left = '-2px'; // Fixed for right-side panel
-            resizer.style.right = 'auto';
-        }
-    }
-    updateResizerStyle();
-    sidebarContainer.appendChild(resizer);
+    // Resizer element and its logic are removed for fixed width
 
     // Create an iframe to load panel.html in extension context
     const iframe = document.createElement('iframe');
@@ -106,31 +77,22 @@ function injectSidebar() {
 
     // Function to adjust WhatsApp Web layout
     function adjustWhatsAppLayout() {
-        const bodyStyle = document.body.style;
-        const appWrapper = document.querySelector('.app-wrapper-web');
+        const appElement = document.getElementById('app');
 
-        bodyStyle.boxSizing = 'border-box'; // Ensure padding is included in width calculations correctly
-        bodyStyle.transition = 'padding-right 0.2s ease-out'; // Smooth transition for body padding
-
-        if (isSidebarCollapsed) {
-            bodyStyle.paddingRight = '0px';
-            if (appWrapper) {
-                // Adjust appWrapper to be to the left of the (now collapsed) sidebar
-                appWrapper.style.setProperty('right', '0px', 'important');
-                appWrapper.style.setProperty('width', 'auto', 'important'); // Assumes appWrapper has left:0 or similar
-                appWrapper.style.removeProperty('margin-right');
-            }
-        } else {
-            bodyStyle.paddingRight = `${currentSidebarWidth}px`; // Keep for other potential elements
-            if (appWrapper) {
-                // Adjust appWrapper to be to the left of the visible sidebar
-                // This assumes appWrapper is positioned e.g. left:0, top:0, bottom:0
-                // and its width can be controlled by setting its 'right' offset.
-                appWrapper.style.setProperty('right', `${currentSidebarWidth}px`, 'important');
-                appWrapper.style.setProperty('width', 'auto', 'important'); // Let left:0 and new right:Wpx define width
-                appWrapper.style.removeProperty('margin-right');
+        if (appElement) {
+            appElement.style.transition = 'width 0.2s ease-out, margin-right 0.2s ease-out'; // Smooth transition
+            if (isSidebarCollapsed) {
+                appElement.style.removeProperty('width');
+                appElement.style.removeProperty('margin-right');
+            } else {
+                appElement.style.setProperty('width', `calc(100% - ${FIXED_PANEL_WIDTH}px)`, 'important');
+                appElement.style.setProperty('margin-right', `${FIXED_PANEL_WIDTH}px`, 'important');
             }
         }
+
+        // Attempt to prevent horizontal scroll on the main document
+        document.documentElement.style.overflowX = 'hidden';
+        document.body.style.overflowX = 'hidden';
     }
 
     // Initial adjustment
@@ -140,7 +102,7 @@ function injectSidebar() {
     // Inject into the body of the page
     document.body.appendChild(sidebarContainer);
     sidebarInjected = true;
-    console.log("Sidebar container, resizer, and iframe injected. Initial state:", { currentSidebarWidth, currentSidebarSide, isSidebarCollapsed });
+    console.log("Sidebar container and iframe injected. Initial state:", { panelWidth: FIXED_PANEL_WIDTH, isSidebarCollapsed });
 
     // Send initial state to panel.js
     if (iframe.contentWindow) {
@@ -156,49 +118,7 @@ function injectSidebar() {
     }
 
 
-    // Resizer logic
-    let isResizing = false;
-    let initialMouseX = 0;
-    let initialSidebarWidth = 0;
-
-    resizer.addEventListener('mousedown', (e) => {
-        if (isSidebarCollapsed) return; // Don't allow resizing if collapsed
-
-        isResizing = true;
-        initialMouseX = e.clientX;
-        initialSidebarWidth = sidebarContainer.offsetWidth;
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'col-resize';
-
-        const onMouseMove = (moveEvent) => {
-            if (!isResizing) return;
-            // Simplified for right-side panel: dragging left decreases width.
-            const dx = initialMouseX - moveEvent.clientX;
-            let newWidth = initialSidebarWidth + dx;
-
-
-            if (newWidth < minSidebarWidth) newWidth = minSidebarWidth;
-            if (newWidth > maxSidebarWidth) newWidth = maxSidebarWidth;
-            
-            sidebarContainer.style.width = `${newWidth}px`;
-            currentSidebarWidth = newWidth;
-            lastNonCollapsedWidth = newWidth; // Update for when expanding
-            adjustWhatsAppLayout();
-        };
-
-        const onMouseUp = () => {
-            if (!isResizing) return;
-            isResizing = false;
-            document.body.style.userSelect = '';
-            document.body.style.cursor = '';
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-            saveSidebarState();
-        };
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    });
+    // Resizer logic removed
 
     // Remove the old static style injection if it exists
     const oldStyle = document.head.querySelector('style[data-whatsapp-ai-copilot-style]');
@@ -225,33 +145,12 @@ function injectSidebar() {
           if (message && message.action === 'toggleSidebarVisibility') {
             isSidebarCollapsed = message.isCollapsed;
             console.log('[Content Script] Toggled visibility. Collapsed:', isSidebarCollapsed);
-            
-            // --- Add detailed logging ---
-            console.log('[Content Script] State before visibility toggle logic:');
-            console.log('  typeof currentSidebarWidth:', typeof currentSidebarWidth, ', value:', currentSidebarWidth);
-            console.log('  typeof lastNonCollapsedWidth:', typeof lastNonCollapsedWidth, ', value:', lastNonCollapsedWidth);
-            console.log('  isSidebarCollapsed:', isSidebarCollapsed);
-            // --- End detailed logging ---
 
-            if (isSidebarCollapsed) {
-                // When collapsing, currentSidebarWidth holds the width *before* collapse.
-                // Store it as lastNonCollapsedWidth if it's a valid width.
-                if (currentSidebarWidth > 50) {
-                     lastNonCollapsedWidth = currentSidebarWidth;
-                }
-                // currentSidebarWidth variable continues to hold the "expanded" target width.
-                // applySidebarStyling will handle making it visually 0px.
-            } else {
-                // When expanding, restore currentSidebarWidth to the last known good non-collapsed width.
-                currentSidebarWidth = (lastNonCollapsedWidth > 50) ? lastNonCollapsedWidth : (parseInt(localStorage.getItem('whatsappAiCopilotSidebarWidth')) || 450);
-            }
-
-            console.log('[Content Script] State after visibility toggle logic:');
-            console.log('  new currentSidebarWidth:', currentSidebarWidth);
-            console.log('  new lastNonCollapsedWidth:', lastNonCollapsedWidth);
+            // Width is now fixed, so no need to manage currentSidebarWidth or lastNonCollapsedWidth for resizing.
+            // applySidebarStyling will use FIXED_PANEL_WIDTH or 0px.
 
             applySidebarStyling();
-            updateResizerStyle();
+            // updateResizerStyle(); // Resizer removed
             adjustWhatsAppLayout();
             saveSidebarState();
             iframe?.contentWindow?.postMessage({ action: 'updatePanelControls', side: 'right', isCollapsed: isSidebarCollapsed }, '*'); // Side is fixed
@@ -316,22 +215,13 @@ function injectSidebar() {
         }
 
         console.log('[Content Script] Handling TOGGLE_PANEL_VISIBILITY_FROM_ACTION. Current collapsed state:', isSidebarCollapsed);
-        
-        // Toggle the collapsed state
-        isSidebarCollapsed = !isSidebarCollapsed;
+
+        isSidebarCollapsed = !isSidebarCollapsed; // Toggle the collapsed state
         console.log('[Content Script] New collapsed state:', isSidebarCollapsed);
 
-        if (isSidebarCollapsed) {
-          if (currentSidebarWidth > 50) {
-            lastNonCollapsedWidth = currentSidebarWidth;
-          }
-        } else {
-          currentSidebarWidth = (lastNonCollapsedWidth > 50) ? lastNonCollapsedWidth : (parseInt(localStorage.getItem('whatsappAiCopilotSidebarWidth')) || 450);
-        }
-        console.log('[Content Script] New currentSidebarWidth:', currentSidebarWidth, 'New lastNonCollapsedWidth:', lastNonCollapsedWidth);
-
+        // Width is fixed, applySidebarStyling handles the visual width (0px or FIXED_PANEL_WIDTH)
         applySidebarStyling();
-        updateResizerStyle();
+        // updateResizerStyle(); // Resizer removed
         adjustWhatsAppLayout();
         saveSidebarState();
 

@@ -54,12 +54,14 @@ const formatMessagesForAI = async (messages: Message[]): Promise<string> => {
  * @param {Message[]} messages - An array of `whatsapp-web.js` Message objects to summarize.
  * @param {string} [startDate] - Optional start date of the message range (DD/MM/YYYY).
  * @param {string} [endDate] - Optional end date of the message range (DD/MM/YYYY).
+ * @param {string} [customPromptText] - Optional custom system prompt text.
  * @returns {Promise<string>} A promise that resolves to the AI-generated summary, or an error message.
  */
 export const generateSummary = async (
     messages: Message[],
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    customPromptText?: string
 ): Promise<string> => {
     if (!openai.apiKey) {
         return "AI service is not configured (OpenAI API key missing).";
@@ -98,7 +100,7 @@ export const generateSummary = async (
         maxTokensForSummary = Math.min(maxTokensForSummary, 4000);
 
 
-        const systemPrompt = `You are an AI specializing in summarizing WhatsApp group conversations, particularly for active, high-volume technical groups like "AI Israel" where discussions revolve heavily around AI concepts, tools, news, and problem-solving. Your primary goal is to distill potentially hundreds or thousands of messages into a clear, actionable, and appropriately ${summaryDetailLevel} HTML summary.
+        const DEFAULT_SYSTEM_PROMPT_FOR_SUMMARY = `You are an AI specializing in summarizing WhatsApp group conversations, particularly for active, high-volume technical groups like "AI Israel" where discussions revolve heavily around AI concepts, tools, news, and problem-solving. Your primary goal is to distill potentially hundreds or thousands of messages into a clear, actionable, and appropriately ${summaryDetailLevel} HTML summary.
 The current summary request covers ${numMessages} messages${dateRangeInfo}. Adjust the depth and breadth of your summary accordingly. It is better to provide more detail and be comprehensive than to be too brief, especially for larger message sets. Capture the essence and key information effectively.
 
 **CRITICAL OUTPUT INSTRUCTION: Your ENTIRE response MUST be a single block of valid HTML. Do NOT include any markdown, code block specifiers (like \`\`\`html), or any text outside of the HTML structure itself.**
@@ -162,10 +164,19 @@ The current summary request covers ${numMessages} messages${dateRangeInfo}. Adju
 
 **Final Check:** Before outputting, ensure your response is ONLY the HTML content as specified, starting with \`<div>\` and ending with \`</div>\`. No extra text, no markdown, no code fences.
 `;
+
+        let systemPromptToUse = DEFAULT_SYSTEM_PROMPT_FOR_SUMMARY;
+        if (customPromptText && customPromptText.trim() !== "") {
+            systemPromptToUse = `${customPromptText.trim()}\n\nIMPORTANT: The following is the primary set of instructions you must adhere to:\n\n${DEFAULT_SYSTEM_PROMPT_FOR_SUMMARY}`;
+            console.log(`[AI.SERVICE] Augmenting default summary prompt with custom instruction: "${customPromptText.substring(0, 100)}..."`);
+        } else {
+            console.log(`[AI.SERVICE] Using default system prompt for summary.`);
+        }
+
         const userQuery = `${conversationContext}\n\nTask: Summarize the above conversation (which includes ${numMessages} messages${dateRangeInfo}) according to the detailed system instructions. Prioritize comprehensiveness and detail appropriate for the volume of messages, ensuring the summary is not too short. Pay close attention to the language instruction.`;
 
         const formattedMessagesForOpenAI: MessageForAI[] = [
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: systemPromptToUse },
             { role: 'user', content: userQuery }
         ];
 
@@ -190,9 +201,14 @@ The current summary request covers ${numMessages} messages${dateRangeInfo}. Adju
  * Answers a question based on a given array of WhatsApp messages and a question string, using the OpenAI API.
  * @param {Message[]} messages - An array of `whatsapp-web.js` Message objects providing context.
  * @param {string} question - The question to answer.
+ * @param {string} [customPromptText] - Optional custom system prompt text.
  * @returns {Promise<string>} A promise that resolves to the AI-generated answer, or an error message.
  */
-export const answerQuestion = async (messages: Message[], question: string): Promise<string> => {
+export const answerQuestion = async (
+    messages: Message[],
+    question: string,
+    customPromptText?: string
+): Promise<string> => {
     if (!openai.apiKey) {
         return "AI service is not configured (OpenAI API key missing).";
     }
@@ -205,7 +221,7 @@ export const answerQuestion = async (messages: Message[], question: string): Pro
 
     try {
         const conversationContext = await formatMessagesForAI(messages);
-        const systemPrompt = `You are an AI assistant designed to answer questions about a specific WhatsApp group conversation, often focused on technology or AI discussions. Use ONLY the provided message history to answer the user's question accurately and concisely, extracting relevant information.
+        const DEFAULT_SYSTEM_PROMPT_FOR_QA = `You are an AI assistant designed to answer questions about a specific WhatsApp group conversation, often focused on technology or AI discussions. Use ONLY the provided message history to answer the user's question accurately and concisely, extracting relevant information.
 
 **LANGUAGE INSTRUCTION:**
 *   **If the conversation history (and potentially the user's question) contains a significant amount of Hebrew, your answer MUST be in HEBREW.**
@@ -213,10 +229,19 @@ export const answerQuestion = async (messages: Message[], question: string): Pro
 *   If the conversation is primarily English or a mix of languages without a clear non-English predominance, respond in English.
 
 If the answer to the question cannot be found within the provided messages, clearly state that the information is not available in the provided context (in the target language). Do not make assumptions or provide information from outside the conversation.`;
+
+        let systemPromptToUse = DEFAULT_SYSTEM_PROMPT_FOR_QA;
+        if (customPromptText && customPromptText.trim() !== "") {
+            systemPromptToUse = `${customPromptText.trim()}\n\nIMPORTANT: The following is the primary set of instructions you must adhere to:\n\n${DEFAULT_SYSTEM_PROMPT_FOR_QA}`;
+            console.log(`[AI.SERVICE] Augmenting default Q&A prompt with custom instruction: "${customPromptText.substring(0, 100)}..."`);
+        } else {
+            console.log(`[AI.SERVICE] Using default system prompt for Q&A.`);
+        }
+
         const userQuery = `${conversationContext}\n\nUser's Question: ${question}\n\nTask: Answer the user's question based ONLY on the conversation history provided above, paying close attention to the language instruction.`;
 
         const formattedMessagesForOpenAI: MessageForAI[] = [
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: systemPromptToUse },
             { role: 'user', content: userQuery }
         ];
 

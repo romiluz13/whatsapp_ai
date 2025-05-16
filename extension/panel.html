@@ -18,6 +18,28 @@
                 <button id="fold-button" class="fold-button" aria-label="החלף מצב סרגל צד"> <!-- Translated Aria Label -->
                     <i class="fas fa-chevron-right"></i>
                 </button>
+                <button id="settings-button" class="button-icon" aria-label="הגדרות" style="margin-left: 5px;"><!-- Adjusted margin for RTL -->
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom Prompt Settings Section (Initially Hidden) -->
+        <div id="custom-prompt-settings-section" class="control-section" style="display: none; margin: 10px 15px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9;">
+            <h3 style="margin-top:0; margin-bottom: 10px; font-size: 1.1em;">הוסף הנחיה מיוחדת (אופציונלי)</h3>
+            <p style="font-size: 0.85em; color: #555; margin-bottom: 10px;">
+                כאן אפשר להוסיף הנחיה מיוחדת שתשפיע על סגנון התגובה של הבינה המלאכותית (למשל, טון דיבור או דגש מסוים).
+                הנחיה זו תתווסף להנחיות ברירת המחדל הקיימות. <strong>זהו פיצ'ר למשתמשים מתקדמים.</strong>
+                אם אינך בטוח, מומלץ להשאיר ריק ולהשתמש בברירת המחדל.
+            </p>
+            <label for="custom-prompt-textarea" style="display:block; margin-bottom:5px; font-weight:bold;">הנחיה נוספת (לדוגמה: 'סכם בסגנון הומוריסטי', 'הוסף בדיחה בסוף כל תשובה', 'הסבר כמו לילד בן 5'):</label>
+            <textarea id="custom-prompt-textarea" rows="8" style="width: 98%; margin-bottom:10px; padding: 5px; border: 1px solid #ccc; border-radius: 3px;" placeholder="השאר ריק כדי להשתמש בהנחיות ברירת המחדל ללא תוספות."></textarea>
+            <button id="save-custom-prompt-button" class="button" style="margin-right: 5px; margin-left: 0;">שמור הנחיה</button> <!-- Adjusted margin for RTL -->
+            <button id="reset-custom-prompt-button" class="button button-outline">אפס לברירת מחדל</button>
+            <button id="view-default-prompts-button" class="button button-outline" style="margin-top: 10px; display: block; width: 100%;">הצג הנחיות ברירת מחדל</button>
+            <div id="default-prompts-display-area" style="margin-top:10px; padding:8px; background-color: #efefef; border-radius:3px; display:none; font-size: 0.9em; line-height: 1.4;">
+                <p style="font-size:0.9em; color:#333;"><strong>הנחיית ברירת מחדל לסיכום:</strong><br><span id="default-summary-prompt-display" style="white-space: pre-wrap; word-break: break-word;"></span></p>
+                <p style="font-size:0.9em; color:#333; margin-top:8px;"><strong>הנחיית ברירת מחדל לשאלות:</strong><br><span id="default-qa-prompt-display" style="white-space: pre-wrap; word-break: break-word;"></span></p>
             </div>
         </div>
 
