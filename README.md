@@ -111,13 +111,15 @@ Getting started is easy! Follow these steps:
     # yarn install
     ```
 4.  **Configure Environment:**
-    *   Create a `.env` file in the `backend` directory. You can copy from `.env.example` if it exists, or create a new one.
-    *   Add your OpenAI API key and optionally specify the model and port:
-        ```env
-        OPENAI_API_KEY=your_openai_api_key_here
-        OPENAI_MODEL=gpt-4o-mini # Or your preferred model
-        PORT=3000 # Optional, defaults to 3000
-        ```
+    *   Create a `.env` file in the `backend` directory (you can copy from `.env.example` if provided).
+    *   **OpenAI API Key Configuration:** You have two options:
+        1.  **Recommended for ease of use:** After installing the extension (see below), open the extension panel in WhatsApp Web, click the settings icon (⚙️), and enter your OpenAI API key directly in the panel. This key will be stored locally in your browser's extension storage and used for AI requests.
+        2.  **Alternative (.env file):** Add your OpenAI API key to the `.env` file. If a key is also set in the extension panel, the panel's key will take precedence.
+            ```env
+            OPENAI_API_KEY=your_openai_api_key_here # Optional if using panel settings
+            OPENAI_MODEL=gpt-4o-mini # Or your preferred model
+            PORT=3000 # Optional, defaults to 3000
+            ```
 5.  **Start the Backend Server:**
     ```bash
     npm run dev

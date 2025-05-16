@@ -27,6 +27,7 @@ let startDateInput, endDateInput, clearDatesButton, dateFilterAreaEl, fetchUnrea
 // DOM element references
 let chatSelectorDropdown, whatsappStatusArea, whatsappConnectionStatus, whatsappQrCodeArea, whatsappQrCodeImg, chatSelectorArea, summarizeButton, askQuestionButton, aiQueryInput, aiChatMessagesDiv, foldButtonElement;
 let settingsButton, customPromptSettingsSection, customPromptTextarea, saveCustomPromptButton, resetCustomPromptButton, viewDefaultPromptsButton, defaultPromptsDisplayArea, defaultSummaryPromptDisplay, defaultQaPromptDisplay;
+let openaiApiKeyInput, saveOpenaiApiKeyButton; // New elements for OpenAI API Key
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -64,6 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
   defaultSummaryPromptDisplay = document.getElementById('default-summary-prompt-display');
   defaultQaPromptDisplay = document.getElementById('default-qa-prompt-display');
 
+  // OpenAI API Key Elements
+  openaiApiKeyInput = document.getElementById('openai-api-key-input');
+  saveOpenaiApiKeyButton = document.getElementById('save-openai-api-key-button');
+
   if (clearDatesButton) {
     clearDatesButton.addEventListener('click', () => {
         if (startDateInput) startDateInput.value = '';
@@ -72,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   setupCustomPromptControls();
+  setupOpenApiKeyControls(); // New function call
   waitForSidebarAndSetup();
 
   function updateFoldButtonIcon(isCollapsed) {
@@ -249,7 +255,52 @@ function waitForSidebarAndSetup() {
     }
     setInterval(checkBackendAndWhatsAppStatus, 15000); 
     setTimeout(setupNewFeatureButtons, 100);
-    loadCustomPrompt(); // Load saved custom prompt
+    loadCustomPrompt();
+    loadOpenAIApiKey(); // Load saved OpenAI API Key
+}
+
+function setupOpenApiKeyControls() {
+    if (saveOpenaiApiKeyButton && openaiApiKeyInput) {
+        saveOpenaiApiKeyButton.addEventListener('click', () => {
+            const apiKey = openaiApiKeyInput.value.trim();
+            if (apiKey) {
+                chrome.storage.local.set({ userOpenAIApiKey: apiKey }, () => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error saving OpenAI API Key:', chrome.runtime.lastError);
+                        showStatus('שגיאה בשמירת מפתח OpenAI API.', true);
+                    } else {
+                        console.log('OpenAI API Key saved.');
+                        showStatus('מפתח OpenAI API נשמר!', false);
+                    }
+                });
+            } else {
+                // If user clears the input and saves, remove it from storage
+                chrome.storage.local.remove('userOpenAIApiKey', () => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error removing OpenAI API Key:', chrome.runtime.lastError);
+                        showStatus('שגיאה בניקוי מפתח OpenAI API.', true);
+                    } else {
+                        console.log('OpenAI API Key removed from storage.');
+                        showStatus('מפתח OpenAI API נמחק (הגדרות שרת ישמשו כברירת מחדל).', false);
+                    }
+                });
+            }
+        });
+    }
+}
+
+function loadOpenAIApiKey() {
+    if (openaiApiKeyInput) {
+        chrome.storage.local.get('userOpenAIApiKey', (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('Error loading OpenAI API Key:', chrome.runtime.lastError);
+                return;
+            }
+            if (result.userOpenAIApiKey) {
+                openaiApiKeyInput.value = result.userOpenAIApiKey;
+            }
+        });
+    }
 }
 
 function setupCustomPromptControls() {
@@ -380,19 +431,20 @@ function setupNewFeatureButtons() {
         }
         addMessageToChat('user', `מבקש סיכום עבור ${currentSelectedChatName || 'הקבוצה הנבחרת'}${startDate || endDate ? ` (תאריכים: ${startDate || ''} - ${endDate || ''})` : ''}.`);
         showAILoading('summarize');
-        chrome.storage.local.get('customSystemPrompt', async (result) => {
+        chrome.storage.local.get(['customSystemPrompt', 'userOpenAIApiKey'], async (storageResult) => {
             if (chrome.runtime.lastError) {
-                console.error('Error getting custom prompt for summary:', chrome.runtime.lastError);
-                addMessageToChat('assistant', 'שגיאה בטעינת הנחיה מותאמת אישית.', true);
+                console.error('Error getting data from storage for summary:', chrome.runtime.lastError);
+                addMessageToChat('assistant', 'שגיאה בטעינת הגדרות.', true);
                 hideAILoading('summarize');
                 return;
             }
-            const customPromptText = result.customSystemPrompt || null;
-            if (customPromptText) {
-                console.log("[PANEL.JS] Sending custom prompt for summary.");
-            } else {
-                console.log("[PANEL.JS] No custom prompt found, backend will use default for summary.");
-            }
+            const customPromptText = storageResult.customSystemPrompt || null;
+            const userApiKey = storageResult.userOpenAIApiKey || null;
+
+            let logMsg = "[PANEL.JS] For summary: ";
+            logMsg += customPromptText ? "Sending custom prompt. " : "No custom prompt. ";
+            logMsg += userApiKey ? "Sending user API key." : "No user API key.";
+            console.log(logMsg);
 
             try {
                 const requestBody = {
@@ -400,7 +452,8 @@ function setupNewFeatureButtons() {
                     startDate: startDate || null,
                     endDate: endDate || null,
                     fetchOnlyUnread: fetchUnreadCheckbox ? fetchUnreadCheckbox.checked : false,
-                    ...(customPromptText && { customPromptText: customPromptText }) // Add if exists
+                    ...(customPromptText && { customPromptText: customPromptText }),
+                    ...(userApiKey && { openaiApiKey: userApiKey })
                 };
                 const response = await fetch(`${BACKEND_URL}/ai/summarize`, {
                     method: 'POST',
@@ -438,19 +491,20 @@ function setupNewFeatureButtons() {
         addMessageToChat('user', `שאלה: ${question}${startDate || endDate ? ` (בהקשר תאריכים: ${startDate || ''} - ${endDate || ''})` : ''}`);
         showAILoading('ask');
 
-        chrome.storage.local.get('customSystemPrompt', async (result) => {
+        chrome.storage.local.get(['customSystemPrompt', 'userOpenAIApiKey'], async (storageResult) => {
             if (chrome.runtime.lastError) {
-                console.error('Error getting custom prompt for Q&A:', chrome.runtime.lastError);
-                addMessageToChat('assistant', 'שגיאה בטעינת הנחיה מותאמת אישית.', true);
+                console.error('Error getting data from storage for Q&A:', chrome.runtime.lastError);
+                addMessageToChat('assistant', 'שגיאה בטעינת הגדרות.', true);
                 hideAILoading('ask');
                 return;
             }
-            const customPromptText = result.customSystemPrompt || null;
-            if (customPromptText) {
-                console.log("[PANEL.JS] Sending custom prompt for Q&A.");
-            } else {
-                console.log("[PANEL.JS] No custom prompt found, backend will use default for Q&A.");
-            }
+            const customPromptText = storageResult.customSystemPrompt || null;
+            const userApiKey = storageResult.userOpenAIApiKey || null;
+
+            let logMsg = "[PANEL.JS] For Q&A: ";
+            logMsg += customPromptText ? "Sending custom prompt. " : "No custom prompt. ";
+            logMsg += userApiKey ? "Sending user API key." : "No user API key.";
+            console.log(logMsg);
 
             try {
                 const requestBody = {
@@ -459,7 +513,8 @@ function setupNewFeatureButtons() {
                     startDate: startDate || null,
                     endDate: endDate || null,
                     fetchOnlyUnread: fetchUnreadCheckbox ? fetchUnreadCheckbox.checked : false,
-                    ...(customPromptText && { customPromptText: customPromptText }) // Add if exists
+                    ...(customPromptText && { customPromptText: customPromptText }),
+                    ...(userApiKey && { openaiApiKey: userApiKey })
                 };
                 const response = await fetch(`${BACKEND_URL}/ai/ask`, {
                     method: 'POST',

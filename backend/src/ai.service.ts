@@ -55,16 +55,22 @@ const formatMessagesForAI = async (messages: Message[]): Promise<string> => {
  * @param {string} [startDate] - Optional start date of the message range (DD/MM/YYYY).
  * @param {string} [endDate] - Optional end date of the message range (DD/MM/YYYY).
  * @param {string} [customPromptText] - Optional custom system prompt text.
+ * @param {string} [openaiApiKey] - Optional user-provided OpenAI API key.
  * @returns {Promise<string>} A promise that resolves to the AI-generated summary, or an error message.
  */
 export const generateSummary = async (
     messages: Message[],
     startDate?: string,
     endDate?: string,
-    customPromptText?: string
+    customPromptText?: string,
+    openaiApiKey?: string
 ): Promise<string> => {
-    if (!openai.apiKey) {
-        return "AI service is not configured (OpenAI API key missing).";
+    const activeOpenAI = (openaiApiKey && openaiApiKey.trim() !== "")
+        ? new OpenAI({ apiKey: openaiApiKey.trim() })
+        : openai;
+
+    if (!activeOpenAI.apiKey) { // Check the potentially new client's API key
+        return "AI service is not configured (OpenAI API key missing or invalid).";
     }
     if (!messages || messages.length === 0) {
         return "No messages provided for summarization.";
@@ -173,6 +179,12 @@ The current summary request covers ${numMessages} messages${dateRangeInfo}. Adju
             console.log(`[AI.SERVICE] Using default system prompt for summary.`);
         }
 
+        if (openaiApiKey && openaiApiKey.trim() !== "") {
+            console.log(`[AI.SERVICE] Using user-provided OpenAI API key for summary.`);
+        } else {
+            console.log(`[AI.SERVICE] Using default backend OpenAI API key for summary.`);
+        }
+
         const userQuery = `${conversationContext}\n\nTask: Summarize the above conversation (which includes ${numMessages} messages${dateRangeInfo}) according to the detailed system instructions. Prioritize comprehensiveness and detail appropriate for the volume of messages, ensuring the summary is not too short. Pay close attention to the language instruction.`;
 
         const formattedMessagesForOpenAI: MessageForAI[] = [
@@ -180,7 +192,7 @@ The current summary request covers ${numMessages} messages${dateRangeInfo}. Adju
             { role: 'user', content: userQuery }
         ];
 
-        const aiResponse = await openai.chat.completions.create({
+        const aiResponse = await activeOpenAI.chat.completions.create({
             model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
             messages: formattedMessagesForOpenAI,
             max_tokens: maxTokensForSummary,
@@ -202,15 +214,21 @@ The current summary request covers ${numMessages} messages${dateRangeInfo}. Adju
  * @param {Message[]} messages - An array of `whatsapp-web.js` Message objects providing context.
  * @param {string} question - The question to answer.
  * @param {string} [customPromptText] - Optional custom system prompt text.
+ * @param {string} [openaiApiKey] - Optional user-provided OpenAI API key.
  * @returns {Promise<string>} A promise that resolves to the AI-generated answer, or an error message.
  */
 export const answerQuestion = async (
     messages: Message[],
     question: string,
-    customPromptText?: string
+    customPromptText?: string,
+    openaiApiKey?: string
 ): Promise<string> => {
-    if (!openai.apiKey) {
-        return "AI service is not configured (OpenAI API key missing).";
+    const activeOpenAI = (openaiApiKey && openaiApiKey.trim() !== "")
+        ? new OpenAI({ apiKey: openaiApiKey.trim() })
+        : openai;
+
+    if (!activeOpenAI.apiKey) { // Check the potentially new client's API key
+        return "AI service is not configured (OpenAI API key missing or invalid).";
     }
     if (!messages || messages.length === 0) {
         return "No message context provided to answer the question.";
@@ -238,6 +256,12 @@ If the answer to the question cannot be found within the provided messages, clea
             console.log(`[AI.SERVICE] Using default system prompt for Q&A.`);
         }
 
+        if (openaiApiKey && openaiApiKey.trim() !== "") {
+            console.log(`[AI.SERVICE] Using user-provided OpenAI API key for Q&A.`);
+        } else {
+            console.log(`[AI.SERVICE] Using default backend OpenAI API key for Q&A.`);
+        }
+
         const userQuery = `${conversationContext}\n\nUser's Question: ${question}\n\nTask: Answer the user's question based ONLY on the conversation history provided above, paying close attention to the language instruction.`;
 
         const formattedMessagesForOpenAI: MessageForAI[] = [
@@ -245,7 +269,7 @@ If the answer to the question cannot be found within the provided messages, clea
             { role: 'user', content: userQuery }
         ];
 
-        const aiResponse = await openai.chat.completions.create({
+        const aiResponse = await activeOpenAI.chat.completions.create({
             model: process.env.OPENAI_MODEL || 'gpt-4o-mini', // Ensure this uses the intended model
             messages: formattedMessagesForOpenAI,
             max_tokens: 250, // Slightly increased if answers might need more detail
