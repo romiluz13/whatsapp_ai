@@ -143,6 +143,7 @@ app.get('/groups', async (req: Request, res: Response) => {
  * @param {string} [req.query.count] - Optional number of messages to fetch (defaults to 1000).
  * @param {string} [req.query.startDate] - Optional start date (YYYY-MM-DD).
  * @param {string} [req.query.endDate] - Optional end date (YYYY-MM-DD).
+ * @param {string} [req.query.fetchOnlyUnread] - Optional boolean (true/false) to fetch only unread messages.
  * @returns {Array<object>} JSON array of formatted message objects, or an error message.
  */
 app.get('/groups/:groupId/messages', async (req: Request, res: Response) => {
@@ -153,6 +154,9 @@ app.get('/groups/:groupId/messages', async (req: Request, res: Response) => {
     const messageCountParam = req.query.count as string;
     const startDate = req.query.startDate as string | undefined;
     const endDate = req.query.endDate as string | undefined;
+    const fetchOnlyUnreadParam = req.query.fetchOnlyUnread as string | undefined;
+
+    const fetchOnlyUnread = fetchOnlyUnreadParam === 'true';
     
     // Default to 1000 messages if not specified or if date range is used (as a base pool)
     const messageCount = messageCountParam ? parseInt(messageCountParam, 10) : 1000;
@@ -162,7 +166,7 @@ app.get('/groups/:groupId/messages', async (req: Request, res: Response) => {
     }
 
     try {
-        const messages = await getGroupMessages(groupId, messageCount, startDate, endDate);
+        const messages = await getGroupMessages(groupId, messageCount, startDate, endDate, fetchOnlyUnread);
         // We might want to map messages to a simpler structure for the frontend
         const formattedMessages = messages.map(msg => ({
             id: msg.id._serialized,
@@ -185,10 +189,11 @@ app.get('/groups/:groupId/messages', async (req: Request, res: Response) => {
  * @param {string} req.body.chatId - The ID of the chat.
  * @param {string} [req.body.startDate] - Optional start date (YYYY-MM-DD).
  * @param {string} [req.body.endDate] - Optional end date (YYYY-MM-DD).
+ * @param {boolean} [req.body.fetchOnlyUnread] - Optional. If true, attempts to fetch only unread messages for summarization.
  * @returns {object} JSON object with the `summary` (string), or an error message.
  */
 app.post('/ai/summarize', async (req: Request, res: Response) => {
-    const { chatId, startDate, endDate } = req.body as { chatId: string, startDate?: string, endDate?: string };
+    const { chatId, startDate, endDate, fetchOnlyUnread } = req.body as { chatId: string, startDate?: string, endDate?: string, fetchOnlyUnread?: boolean };
 
     if (!chatId) {
         return res.status(400).json({ error: 'Chat ID is required for summarization.' });
@@ -198,9 +203,9 @@ app.post('/ai/summarize', async (req: Request, res: Response) => {
     }
 
     try {
-        // Fetch messages using the service, applying date filters if provided
+        // Fetch messages using the service, applying date filters and unread flag if provided
         // Default to 1000 messages if no date range, or as a base for filtering
-        const messages = await getGroupMessages(chatId, 1000, startDate, endDate);
+        const messages = await getGroupMessages(chatId, 1000, startDate, endDate, fetchOnlyUnread);
 
         if (!messages || messages.length === 0) {
             return res.status(404).json({ error: 'No messages found for the given criteria to summarize.' });
@@ -221,10 +226,11 @@ app.post('/ai/summarize', async (req: Request, res: Response) => {
  * @param {string} req.body.question - The question to be answered.
  * @param {string} [req.body.startDate] - Optional start date (YYYY-MM-DD).
  * @param {string} [req.body.endDate] - Optional end date (YYYY-MM-DD).
+ * @param {boolean} [req.body.fetchOnlyUnread] - Optional. If true, attempts to fetch only unread messages for context.
  * @returns {object} JSON object with the `answer` (string), or an error message.
  */
 app.post('/ai/ask', async (req: Request, res: Response) => {
-    const { chatId, question, startDate, endDate } = req.body as { chatId: string, question: string, startDate?: string, endDate?: string };
+    const { chatId, question, startDate, endDate, fetchOnlyUnread } = req.body as { chatId: string, question: string, startDate?: string, endDate?: string, fetchOnlyUnread?: boolean };
 
     if (!chatId) {
         return res.status(400).json({ error: 'Chat ID is required to answer a question.' });
@@ -237,8 +243,8 @@ app.post('/ai/ask', async (req: Request, res: Response) => {
     }
 
     try {
-        // Fetch messages using the service, applying date filters if provided
-        const messages = await getGroupMessages(chatId, 1000, startDate, endDate);
+        // Fetch messages using the service, applying date filters and unread flag if provided
+        const messages = await getGroupMessages(chatId, 1000, startDate, endDate, fetchOnlyUnread);
 
         if (!messages || messages.length === 0) {
             return res.status(404).json({ error: 'No messages found for the given criteria to answer the question.' });

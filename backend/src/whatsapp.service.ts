@@ -165,6 +165,7 @@ const getGroups = async (): Promise<{ id: string; name: string }[]> => {
  * @param {number} [messageCount=1000] - The number of messages to fetch if no date range is specified, or the initial batch size if dates are specified.
  * @param {string} [startDate] - Optional start date string (e.g., "YYYY-MM-DD").
  * @param {string} [endDate] - Optional end date string (e.g., "YYYY-MM-DD").
+ * @param {boolean} [fetchOnlyUnread] - Optional. If true, attempts to fetch only unread messages.
  * @returns {Promise<Message[]>} A promise that resolves to an array of `whatsapp-web.js` Message objects.
  * @throws Will throw an error if the client is not ready, or if the group is not found or messages cannot be fetched.
  */
@@ -172,24 +173,45 @@ const getGroupMessages = async (
     groupId: string,
     messageCount: number = 1000,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    fetchOnlyUnread?: boolean
 ): Promise<Message[]> => {
     if (!isClientReady()) {
         throw new Error("WhatsApp client not ready.");
     }
     const currentClient = getClient();
     try {
+        console.log(`[WHATSAPP.SERVICE] getGroupMessages called with: groupId=${groupId}, messageCount=${messageCount}, startDate=${startDate}, endDate=${endDate}, fetchOnlyUnread=${fetchOnlyUnread}`);
         const chat = await currentClient.getChatById(groupId);
         if (!chat || !chat.isGroup) {
             throw new Error(`Group with ID ${groupId} not found or is not a group.`);
         }
+        console.log(`[WHATSAPP.SERVICE] Fetched chat: ${chat.id._serialized}, Unread count: ${chat.unreadCount}`);
+
         // Fetch messages, whatsapp-web.js fetches recent messages by default with limit
         // If dates are provided, we might fetch a larger batch to ensure coverage, then filter.
-        // For simplicity, we'll use messageCount as the limit for the initial fetch.
         // If date filtering is active, messageCount effectively becomes the max pool size for filtering.
-        const messagesToFetch = (startDate && endDate) ? Math.max(messageCount, 1000) : messageCount; // Ensure a decent pool if filtering
+        
+        let effectiveMessageCount = messageCount;
+        console.log(`[WHATSAPP.SERVICE] Initial effectiveMessageCount: ${effectiveMessageCount}`);
+
+        if (fetchOnlyUnread && chat.unreadCount && chat.unreadCount > 0) {
+            console.log(`[WHATSAPP.SERVICE] fetchOnlyUnread is TRUE. Using chat.unreadCount (${chat.unreadCount}) as effectiveMessageCount.`);
+            effectiveMessageCount = chat.unreadCount;
+        } else if (fetchOnlyUnread) {
+            console.log(`[WHATSAPP.SERVICE] fetchOnlyUnread is TRUE, but chat.unreadCount is ${chat.unreadCount}. Defaulting to initial messageCount (${messageCount}) for effectiveMessageCount.`);
+            // effectiveMessageCount remains messageCount as per current logic
+        } else {
+            console.log(`[WHATSAPP.SERVICE] fetchOnlyUnread is FALSE. Using initial messageCount (${messageCount}) for effectiveMessageCount.`);
+        }
+        console.log(`[WHATSAPP.SERVICE] After unread check, effectiveMessageCount: ${effectiveMessageCount}`);
+
+        // Ensure a decent pool if date filtering is active, potentially overriding unread count if date range is wide
+        const messagesToFetch = (startDate && endDate) ? Math.max(effectiveMessageCount, 1000) : effectiveMessageCount;
+        console.log(`[WHATSAPP.SERVICE] Final messagesToFetch (considering date filters influencing pool size): ${messagesToFetch}`);
         
         let messages = await chat.fetchMessages({ limit: messagesToFetch });
+        console.log(`[WHATSAPP.SERVICE] Fetched ${messages.length} messages initially (before date filtering).`);
 
         if (startDate && endDate) {
             console.log(`[WHATSAPP.SERVICE] Filtering messages for group ${groupId} between ${startDate} (DD/MM/YYYY) and ${endDate} (DD/MM/YYYY)`);

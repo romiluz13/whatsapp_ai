@@ -38,7 +38,20 @@
                 </select>
             </div>
 
-            <!-- NEW: Date Range Filter Area -->
+            <!-- UI Improvement: Filter Options Label -->
+            <div id="filter-options-label" class="control-section" style="display: none; margin: 10px 15px 5px; font-size: 0.95em; color: #333; text-align: right;">
+                סנן הודעות לפי (ברירת מחדל: 1000 אחרונות):
+            </div>
+
+            <!-- Unread Messages Checkbox - Moved Up and Bolder -->
+            <div id="unread-filter-area" class="control-section" style="display: none; margin: 5px 15px 10px; padding: 5px 0;">
+                <div style="display: flex; align-items: center;">
+                    <input type="checkbox" id="fetch-unread-checkbox" name="fetchUnread" style="margin-right: 5px; margin-left:0;">
+                    <label for="fetch-unread-checkbox" style="font-size: 0.95em; color: #333; font-weight: bold;">רק הודעות שלא נקראו</label>
+                </div>
+            </div>
+
+            <!-- Date Range Filter Area -->
             <div id="date-filter-area" class="control-section" style="display: none; margin: 0 15px 10px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <label for="startDate" style="font-size: 0.9em; color: #555;">תאריך התחלה: <span style="font-size: 0.9em; color: #777;">(DD/MM/YYYY)</span></label>
